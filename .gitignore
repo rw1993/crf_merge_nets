@@ -1,0 +1,5 @@
+*.pyc
+*.normalize_data
+*.csv
+log/
+model/
