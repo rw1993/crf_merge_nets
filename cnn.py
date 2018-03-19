@@ -22,6 +22,7 @@ def main():
     timestep = 10
     test_tensor = tf.placeholder(tf.float32, shape=(batch_size, timestep, dimensions))
     net = cnn(net=test_tensor, batch_size=batch_size, dimensions=dimensions, timestep=timestep)
+    print(net)
     import ipdb; ipdb.set_trace()
 
 if __name__ == '__main__':

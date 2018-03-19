@@ -15,13 +15,13 @@ def train(batch_size=8, timestep=10, data_path="yfj.csv"):
     learning_rate_tensor = tf.placeholder(dtype=tf.float32, shape=())
     optimizer = tf.train.AdamOptimizer(learning_rate_tensor)
     gradients = optimizer.compute_gradients(loss_tensor)
-    cilp_gradients = [(tf.clip_by_value(g, -5.0, 5.0), v) for g, v in gradients]
+    cilp_gradients = [(tf.clip_by_value(g, -5.0, 5.0), v) for g, v in gradients if g is not None]
     train_step = optimizer.apply_gradients(cilp_gradients)
     init = tf.global_variables_initializer()
     tf.summary.scalar("loss", loss_tensor)
     merge_summary_op = tf.summary.merge_all()
     step = 0
-    learning_rate = 0.0001
+    learning_rate = 1e-5
     with tf.Session() as sess:
         summary_writer = tf.summary.FileWriter("log", graph=sess.graph)
         sess.run(init)
