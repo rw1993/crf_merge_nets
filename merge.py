@@ -4,7 +4,7 @@ from mfi_function import crf_layer
 import tensorflow as tf
 from cnn import cnn
 
-def lstm_only(batch_size, dimensions , timestep, distances):
+def lstm_only(batch_size, dimensions , timestep, distances, **kw):
     bx_tenor = tf.placeholder(tf.float32, (batch_size, timestep, dimensions))
     dropout_tenor = tf.placeholder(tf.float32, ())
     with tf.variable_scope("lstm"):

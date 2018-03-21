@@ -4,13 +4,19 @@ import numpy as np
 def generate_batch(batch_size, timestep, dimensions, data_path="None", data_set="train"):
     normalize_data = get_data(data_path)
     total = len(normalize_data)
-    train_test = int(total*0.7)
-    train = normalize_data[: train_test]
-    test = normalize_data[train_test: ]
+    train_valid= int(total*0.6)
+    valid_test = int(total*0.8)
+
+    train = normalize_data[: train_valid]
+    valid = normalize_data[train_valid: valid_test]
+    test = normalize_data[valid_test:]
     if data_set == "train":
         data = train
-    else:
+    elif data_set == "test":
         data = test
+    else:
+        data = valid
+
     by = []
     bx = []
     while True:

@@ -17,7 +17,8 @@ def train(batch_size=8, timestep=10, data_path="yfj.csv", train_net=""):
                                             distances=distances, dimensions=dimensions)
     loss_tensor, by_tensor = get_loss(net, batch_size, dimensions)
     learning_rate_tensor = tf.placeholder(dtype=tf.float32, shape=())
-    optimizer = tf.train.AdamOptimizer(learning_rate_tensor)
+    #optimizer = tf.train.AdamOptimizer(learning_rate_tensor)
+    optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate_tensor, momentum=0.9)
     gradients = optimizer.compute_gradients(loss_tensor)
     cilp_gradients = [(tf.clip_by_value(g, -5.0, 5.0), v) for g, v in gradients if g is not None]
     train_step = optimizer.apply_gradients(cilp_gradients)
@@ -25,7 +26,7 @@ def train(batch_size=8, timestep=10, data_path="yfj.csv", train_net=""):
     tf.summary.scalar("loss", loss_tensor)
     merge_summary_op = tf.summary.merge_all()
     step = 0
-    learning_rate = 1e-5
+    learning_rate = 0.1
     with tf.Session() as sess:
         summary_writer = tf.summary.FileWriter("{}log".format(train_net), graph=sess.graph)
         sess.run(init)
@@ -37,7 +38,7 @@ def train(batch_size=8, timestep=10, data_path="yfj.csv", train_net=""):
                                      data_path=data_path, data_set="train"):
             _, summary_string, loss = sess.run([train_step, merge_summary_op, loss_tensor],
                                                 feed_dict={bx_tensor: bx,
-                                                dropout_tensor: 0.8,
+                                                dropout_tensor: 1.0,
                                                 learning_rate_tensor:
                                                 learning_rate,
                                                 by_tensor: by})
@@ -57,7 +58,7 @@ def train(batch_size=8, timestep=10, data_path="yfj.csv", train_net=""):
                 valid = 0
                 for bx, by in generate_batch(batch_size=batch_size, timestep=timestep,
                                              dimensions=dimensions, data_path=data_path,
-                                             data_set="test"):
+                                             data_set="valid"):
                     q_result, = sess.run([net,], feed_dict={bx_tensor: bx,
                                                 dropout_tensor: 1.0,
                                                 learning_rate_tensor: learning_rate,
