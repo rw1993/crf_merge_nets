@@ -55,8 +55,10 @@ def loop_generate_batch(batch_size, timestep, dimensions, data_path="None", data
     by = []
     bx = []
     epoch = 1
+    indexs = [i for i in range(data.shape[0])]
     while True:
-        for index in range(data.shape[0]):
+        np.random.shuffle(indexs)
+        for index in indexs:
             x = [e for e in map(lambda i: data[i],
                 [index - i for i in range(1, timestep+1)])]
             if len(x) < timestep:

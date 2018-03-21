@@ -67,7 +67,7 @@ def train(batch_size=8, timestep=10,
                 total = 0
                 acc = 0.0
                 valid = 0
-                for b, bx, by in generate_batch(batch_size=batch_size, timestep=timestep,
+                for e, bx, by in generate_batch(batch_size=batch_size, timestep=timestep,
                                                 dimensions=dimensions, data_path=data_path,
                                                 data_set="valid"):
                     q_result, = sess.run([net,], feed_dict={bx_tensor: bx,
@@ -75,7 +75,7 @@ def train(batch_size=8, timestep=10,
                                                 learning_rate_tensor: learning_rate,
                                                 by_tensor: by})
                     valid += 1
-                    if b == 2 and batch_way == "loop":
+                    if e == 2 and batch_way == "loop":
                         break
                     for b in range(batch_size):
                         for i in range(dimensions):
@@ -94,7 +94,9 @@ def train(batch_size=8, timestep=10,
                 print("valid acc is {} after step {}".format(float(acc)/total, step))
             former_epoch = epoch
 def main():
-    train(train_net="lstm", batch_way="loop")
+    train(train_net="lstm",
+          batch_way="loop",
+          batch_size=128)
 
 if __name__ == '__main__':
     main()
