@@ -1,16 +1,20 @@
-from merge import get_loss, merge
+from merge import get_loss, lstm_only, merge
 from batch import generate_batch
 from read_data import get_data
 import correlation
 import tensorflow as tf
 
-def train(batch_size=8, timestep=10, data_path="yfj.csv"):
+def train(batch_size=8, timestep=10, data_path="yfj.csv", train_net=""):
     nomalize_data  = get_data(data_path)
     _, dimensions = nomalize_data.shape
     pearson_dict = correlation.get_pearson(data_path)
     distances = [pearson_dict]
-    net, bx_tensor, dropout_tensor = merge(batch_size=batch_size, timestep=timestep,
-                                         distances=distances, dimensions=dimensions)
+    if train_net is None:
+        net, bx_tensor, dropout_tensor = merge(batch_size=batch_size, timestep=timestep,
+                                            distances=distances, dimensions=dimensions)
+    elif train_net == "lstm":
+        net, bx_tensor, dropout_tensor = lstm_only(batch_size=batch_size, timestep=timestep,
+                                            distances=distances, dimensions=dimensions)
     loss_tensor, by_tensor = get_loss(net, batch_size, dimensions)
     learning_rate_tensor = tf.placeholder(dtype=tf.float32, shape=())
     optimizer = tf.train.AdamOptimizer(learning_rate_tensor)
@@ -23,7 +27,7 @@ def train(batch_size=8, timestep=10, data_path="yfj.csv"):
     step = 0
     learning_rate = 1e-5
     with tf.Session() as sess:
-        summary_writer = tf.summary.FileWriter("log", graph=sess.graph)
+        summary_writer = tf.summary.FileWriter("{}log".format(train_net), graph=sess.graph)
         sess.run(init)
         recent_avgloss = 0.0
         saver = tf.train.Saver()
@@ -45,7 +49,7 @@ def train(batch_size=8, timestep=10, data_path="yfj.csv"):
                 print(recent_avgloss / 100.0, step)
                 recent_avgloss = 0.0
             if step % 10000 == 0:
-                saver.save(sess, "model/", global_step=step)
+                saver.save(sess, "{}model/".format(train_net), global_step=step)
                 # valid
                 valid_num = 10000
                 total = 0
@@ -75,7 +79,7 @@ def train(batch_size=8, timestep=10, data_path="yfj.csv"):
                 former_acc = float(acc) / total
                 print("valid acc is {} after step {}".format(float(acc)/total, step))
 def main():
-    train()
+    train(train_net="lstm")
 
 if __name__ == '__main__':
     main()
