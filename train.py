@@ -1,10 +1,17 @@
 from merge import get_loss, lstm_only, merge
-from batch import generate_batch
+from batch import loop_generate_batch, random_generate_batch
 from read_data import get_data
 import correlation
 import tensorflow as tf
 
-def train(batch_size=8, timestep=10, data_path="yfj.csv", train_net=""):
+def train(batch_size=8, timestep=10,
+          data_path="yfj.csv", train_net="",
+          batch_way="loop"):
+    if batch_way == "loop":
+        generate_batch = loop_generate_batch
+    else:
+        generate_batch = random_generate_batch
+
     nomalize_data  = get_data(data_path)
     _, dimensions = nomalize_data.shape
     pearson_dict = correlation.get_pearson(data_path)
@@ -34,7 +41,8 @@ def train(batch_size=8, timestep=10, data_path="yfj.csv", train_net=""):
         saver = tf.train.Saver()
         former_acc = 0.0
         print("builded")
-        for bx, by in generate_batch(batch_size=batch_size, timestep=timestep, dimensions=dimensions,
+        former_epoch = 1
+        for epoch, bx, by in generate_batch(batch_size=batch_size, timestep=timestep, dimensions=dimensions,
                                      data_path=data_path, data_set="train"):
             _, summary_string, loss = sess.run([train_step, merge_summary_op, loss_tensor],
                                                 feed_dict={bx_tensor: bx,
@@ -49,21 +57,26 @@ def train(batch_size=8, timestep=10, data_path="yfj.csv", train_net=""):
             if step % 100 == 0:
                 print(recent_avgloss / 100.0, step)
                 recent_avgloss = 0.0
-            if step % 10000 == 0:
+            if ((step % 10000 == 0 and 
+                batch_way == "random") or
+                (former_epoch != epoch and batch_way == "loop")):
+
                 saver.save(sess, "{}model/".format(train_net), global_step=step)
                 # valid
                 valid_num = 10000
                 total = 0
                 acc = 0.0
                 valid = 0
-                for bx, by in generate_batch(batch_size=batch_size, timestep=timestep,
-                                             dimensions=dimensions, data_path=data_path,
-                                             data_set="valid"):
+                for b, bx, by in generate_batch(batch_size=batch_size, timestep=timestep,
+                                                dimensions=dimensions, data_path=data_path,
+                                                data_set="valid"):
                     q_result, = sess.run([net,], feed_dict={bx_tensor: bx,
                                                 dropout_tensor: 1.0,
                                                 learning_rate_tensor: learning_rate,
                                                 by_tensor: by})
                     valid += 1
+                    if b == 2 and batch_way == "loop":
+                        break
                     for b in range(batch_size):
                         for i in range(dimensions):
                             total += 1
@@ -73,14 +86,15 @@ def train(batch_size=8, timestep=10, data_path="yfj.csv", train_net=""):
                             else:
                                 if by[b][i] == 1:
                                     acc += 1
-                    if valid >= valid_num:
+                    if valid >= valid_num and batch_way == "random":
                         break
                 if float(acc) / total < former_acc:
                     learning_rate /= 10.0
                 former_acc = float(acc) / total
                 print("valid acc is {} after step {}".format(float(acc)/total, step))
+            former_epoch = epoch
 def main():
-    train(train_net="lstm")
+    train(train_net="lstm", batch_way="loop")
 
 if __name__ == '__main__':
     main()
