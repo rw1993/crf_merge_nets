@@ -15,6 +15,19 @@ def lstm(net, dropout, batch_size, dimensions, **kw):
                                         return_seq=True)
     net = tf.nn.dropout(net, dropout)
     net = tflearn.layers.recurrent.lstm(net,
+                                        n_units=512,
+                                        activation="softsign",
+                                        weights_init="xavier",
+                                        return_seq=True)
+    net = tf.nn.dropout(net, dropout)
+    net = tflearn.layers.recurrent.lstm(net,
+                                        n_units=256,
+                                        activation="softsign",
+                                        weights_init="xavier",
+                                        return_seq=True)
+    net = tf.nn.dropout(net, dropout)
+ 
+    net = tflearn.layers.recurrent.lstm(net,
                                         n_units=128,
                                         activation="softsign",
                                         weights_init="xavier",

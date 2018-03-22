@@ -46,7 +46,7 @@ def train(batch_size=8, timestep=10,
                                      data_path=data_path, data_set="train"):
             _, summary_string, loss = sess.run([train_step, merge_summary_op, loss_tensor],
                                                 feed_dict={bx_tensor: bx,
-                                                dropout_tensor: 1.0,
+                                                dropout_tensor: 0.8,
                                                 learning_rate_tensor:
                                                 learning_rate,
                                                 by_tensor: by})
@@ -96,7 +96,7 @@ def train(batch_size=8, timestep=10,
 def main():
     train(train_net="lstm",
           batch_way="loop",
-          batch_size=128)
+          batch_size=256)
 
 if __name__ == '__main__':
     main()
