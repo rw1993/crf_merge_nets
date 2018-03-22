@@ -1,4 +1,4 @@
-from merge import get_loss, lstm_only, merge
+from merge import get_loss, lstm_only, merge, add_crf
 from batch import loop_generate_batch, random_generate_batch
 from read_data import get_data
 import correlation
@@ -6,7 +6,8 @@ import tensorflow as tf
 
 def train(batch_size=8, timestep=10,
           data_path="yfj.csv", train_net="",
-          batch_way="loop"):
+          batch_way="loop",
+          crf="False"):
     if batch_way == "loop":
         generate_batch = loop_generate_batch
     else:
@@ -16,12 +17,17 @@ def train(batch_size=8, timestep=10,
     _, dimensions = nomalize_data.shape
     pearson_dict = correlation.get_pearson(data_path)
     distances = [pearson_dict]
-    if train_net is None:
+    if train_net == "":
         net, bx_tensor, dropout_tensor = merge(batch_size=batch_size, timestep=timestep,
                                             distances=distances, dimensions=dimensions)
     elif train_net == "lstm":
         net, bx_tensor, dropout_tensor = lstm_only(batch_size=batch_size, timestep=timestep,
                                             distances=distances, dimensions=dimensions)
+    if crf and train_net != "":
+        net = add_crf(net=net, distances=distances,
+                      batch_size=batch_size,
+                      dimensions=dimensions,
+                      timestep=timestep)
     loss_tensor, by_tensor = get_loss(net, batch_size, dimensions)
     learning_rate_tensor = tf.placeholder(dtype=tf.float32, shape=())
     #optimizer = tf.train.AdamOptimizer(learning_rate_tensor)
@@ -35,7 +41,7 @@ def train(batch_size=8, timestep=10,
     step = 0
     learning_rate = 0.1
     with tf.Session() as sess:
-        summary_writer = tf.summary.FileWriter("{}log".format(train_net), graph=sess.graph)
+        summary_writer = tf.summary.FileWriter("{}_crf_{}log".format(train_net, crf), graph=sess.graph)
         sess.run(init)
         recent_avgloss = 0.0
         saver = tf.train.Saver()
@@ -55,13 +61,13 @@ def train(batch_size=8, timestep=10,
             # print loss, step
             recent_avgloss += loss
             if step % 100 == 0:
-                print(recent_avgloss / 100.0, step)
+                print(recent_avgloss / 100.0, step, epoch)
                 recent_avgloss = 0.0
             if ((step % 10000 == 0 and 
                 batch_way == "random") or
                 (former_epoch != epoch and batch_way == "loop")):
 
-                saver.save(sess, "{}model/".format(train_net), global_step=step)
+                saver.save(sess, "{}_crf_{}model/".format(train_net, crf), global_step=step)
                 # valid
                 valid_num = 10000
                 total = 0
@@ -91,12 +97,14 @@ def train(batch_size=8, timestep=10,
                 if float(acc) / total < former_acc:
                     learning_rate /= 10.0
                 former_acc = float(acc) / total
-                print("valid acc is {} after step {}".format(float(acc)/total, step))
+                print("valid acc is {} after step {} at epoch {}".format(float(acc)/total,
+                                                                         step, epoch))
             former_epoch = epoch
 def main():
     train(train_net="lstm",
           batch_way="loop",
-          batch_size=256)
+          batch_size=256,
+          crf=True)
 
 if __name__ == '__main__':
     main()
